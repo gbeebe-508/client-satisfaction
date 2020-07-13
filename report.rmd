@@ -64,14 +64,18 @@ You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
 
+# print basic summary table for the five ordinal questions
 summary(subset(survey_data, select = c("question1", "question2", "question3", "question4", "question5")))
-ggpairs(subset(survey_data, select = c("question1", "question2", "question3", "question4", "question5")))
 
-test <- na.omit(subset(survey_data, select = c("question1", "question2", "question3", "question4", "question5")))
-rename(test, c("Q1" = "question1", "Q2" = "question2", "Q3" = "question3", "Q4" = "question4", "Q5" = "question5"))
+# create new dataframe containing only those rows with all five ordinal questions answered, shorten column names
+questions_only <- survey_data %>%
+  subset(select = c("question1", "question2", "question3", "question4", "question5")) %>%
+  na.omit() %>%
+  rename(c("Q1" = "question1", "Q2" = "question2", "Q3" = "question3", "Q4" = "question4", "Q5" = "question5"))
 
-ggpairs(test, lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.1)), progress = FALSE)
+
+ggpairs(questions_only, lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.1)), progress = FALSE)
 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
