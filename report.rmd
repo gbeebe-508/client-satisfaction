@@ -10,31 +10,51 @@ output: html_document
 knitr::opts_chunk$set(echo = FALSE)
 library(dplyr)
 library(airtabler)
+library(ggplot2)
+library(GGally)
+
+theme_set(theme_minimal(base_size = 16))
+
+# note: .Renviron file MUST include API key
 
 ```
 
-## R Markdown
+## Diversion Client Satisfaction
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+In April 2020, the Housing Solutions Center deployed a new method of collecting client feedback. Previously, clients were given the option of completing a paper feedback form. These paper forms were anonymized and aggregated for review, but this method made it impossible to find patterns related to demographics. 
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+The new method uses a custom ART report to create a list of clients to survey roughly three time per week. Included clients are those with an entry into diversion, street outreach, or prevention added since the last set of surveys was sent. These clients are saved in an ongoing Excel document that is used solely for identifying and removing duplicates (if a client has already received an entry survey for another program, they are not surveyed again). This information is loaded into a table in Airtable that is monitored by an automate.io bot. When new rows are added, the automate.io bot triggers the Twilio REST API that sends surveys to the newly added clients. Twilio conducts the survey and stores the client's answers, and when the survey is completed or abandoned the results are pushed to another table in Airtable, and both tables are backed up to a Google Sheet belonging to the Council for the Homeless's GSuite account. The graphical overview of these results can be found at the Client Satisfaction Survey dashboard on the Council for the Homeless Tableau Public account (this dashboard is automatically updated once every 24 hours).
 
 ```{r data set up}
 
+# load in data
 airtable_data <- 
   airtable(
     base = "appExi4DzxTiN45cc", 
     tables = c("EntrySendTexts", "EntryTextResponses")
   )
 
+# isolate tables
 clients <- airtable_data$EntrySendTexts$select_all()
 responses <- airtable_data$EntryTextResponses$select_all()
 
+# keep desired columns from client table
+clients = subset(clients, select = c("PhoneNumber", "Program", "Age",  "Gender", "Race", "Ethnicity", "Primary Staff", "Entry Date"))
+
+# keep desired columns from response table
+responses = subset(responses, select = c("PhoneNumber", "question1", "question2", "question3", "question4", "question5", "question6", "question7", "question8", "NoResponse", "Language"))
+
+# correct formatting on phone number in response table to match client table
 responses$PhoneNumber <- substr(responses$PhoneNumber, 3, 12)
 
+# preview client and response tables prior to joining
 head(clients); head(responses)
 
+# join client and response tables
+survey_data <- left_join(clients, responses, by = "PhoneNumber")
 
+# preview joined data
+head(survey_data)
 
 ```
 
@@ -43,7 +63,15 @@ head(clients); head(responses)
 You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+
+summary(subset(survey_data, select = c("question1", "question2", "question3", "question4", "question5")))
+ggpairs(subset(survey_data, select = c("question1", "question2", "question3", "question4", "question5")))
+
+test <- na.omit(subset(survey_data, select = c("question1", "question2", "question3", "question4", "question5")))
+rename(test, c("Q1" = "question1", "Q2" = "question2", "Q3" = "question3", "Q4" = "question4", "Q5" = "question5"))
+
+ggpairs(test, lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.1)), progress = FALSE)
+
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
