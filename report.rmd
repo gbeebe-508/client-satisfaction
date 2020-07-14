@@ -12,10 +12,15 @@ library(dplyr)
 library(airtabler)
 library(ggplot2)
 library(GGally)
+library(likert)
 
 theme_set(theme_minimal(base_size = 16))
 
 # note: .Renviron file MUST include API key
+
+# may need to install devtools package and run
+#   devtools::install_github("bergant/airtabler")
+# in console to add airtabler to library
 
 ```
 
@@ -70,11 +75,13 @@ summary(subset(survey_data, select = c("question1", "question2", "question3", "q
 # create new dataframe containing only those rows with all five ordinal questions answered, shorten column names
 questions_only <- survey_data %>%
   subset(select = c("question1", "question2", "question3", "question4", "question5")) %>%
-  na.omit() %>%
+  # na.omit() %>%
   rename(c("Q1" = "question1", "Q2" = "question2", "Q3" = "question3", "Q4" = "question4", "Q5" = "question5"))
 
 
 ggpairs(questions_only, lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.1)), progress = FALSE)
+
+likert(questions_only)
 
 ```
 
