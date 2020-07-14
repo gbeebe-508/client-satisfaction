@@ -63,25 +63,47 @@ head(survey_data)
 
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
+## Analysis
 
 ```{r pressure, echo=FALSE}
 
 # print basic summary table for the five ordinal questions
 summary(subset(survey_data, select = c("question1", "question2", "question3", "question4", "question5")))
 
-# create new dataframe containing only those rows with all five ordinal questions answered, shorten column names
-questions_only <- survey_data %>%
+# create new dataframe containing only the five ordinal questions answered, remove NAs, shorten column names
+for_correlation <- survey_data %>%
   subset(select = c("question1", "question2", "question3", "question4", "question5")) %>%
-  # na.omit() %>%
+  na.omit() %>%
   rename(c("Q1" = "question1", "Q2" = "question2", "Q3" = "question3", "Q4" = "question4", "Q5" = "question5"))
 
+# run ggpairs plot for all ordinal answers
+ggpairs(for_correlation, lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.1)), progress = FALSE)
 
-ggpairs(questions_only, lower = list(continuous = wrap("smooth", alpha = 0.3, size=0.1)), progress = FALSE)
+# create new dataframe containing only the five ordinal questions answered, shorten column names
+for_likert <- survey_data %>%
+  subset(select = c("question1", "question2", "question3", "question4", "question5")) %>%
+  rename(c("Q1" = "question1", "Q2" = "question2", "Q3" = "question3", "Q4" = "question4", "Q5" = "question5"))
 
-likert(questions_only)
+# create labels for levels
+survey_levels <- c('Strongly Disagree', 'Disagree', 'Neither', 'Agree', 'Strongly Agree')
+
+# change answers to labeled factors
+for (i in seq_along(for_likert)) {
+  for (j in seq(1, nrow(for_likert))) {
+    value <- as.integer(for_likert[j, i])
+    for_likert[j, i] <- survey_levels[value]
+  }
+  for_likert[, i] <- factor(for_likert[, i], levels = survey_levels)
+}
+
+likert_results <- likert(for_likert)
+
+summary(likert_results)
+plot(likert_results)
+
+lgr <- likert(likert_results, grouping = survey_data$Gender)
+summary(lgr)
+plot(lgr)
 
 ```
 
